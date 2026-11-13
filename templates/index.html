@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
+  <title>AI Copilot </title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Inter & JetBrains Mono Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --app-font: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --mono-font: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: var(--app-font);
+      background-color: #f8fafc;
+      color: #0f172a;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      width: 100%;
+    }
+
+    .font-mono {
+      font-family: var(--mono-font);
+    }
+
+    /* Dynamic Viewport Height handling (handles mobile virtual keyboard properly) */
+    .app-shell {
+      height: 100vh;
+      height: 100dvh;
+      min-height: -webkit-fill-available;
+    }
+
+    /* Safe Area Inset Support for notch/home-indicator on iOS and modern Android */
+    .safe-top {
+      padding-top: max(0.75rem, env(safe-area-inset-top));
+    }
+    .safe-bottom {
+      padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+    }
+    .safe-left {
+      padding-left: max(0.75rem, env(safe-area-inset-left));
+    }
+    .safe-right {
+      padding-right: max(0.75rem, env(safe-area-inset-right));
+    }
+
+    /* Custom Slim Scrollbars */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* Hide scrollbar for clean horizontal swiping on mobile */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* Message animation */
+    .msg-fade-in {
+      animation: msgFade 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes msgFade {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Prevent iOS Safari 16px auto-zoom on textarea focus */
+    @media screen and (max-width: 640px) {
+      #user-input {
+        font-size: 16px !important;
+      }
+    }
+  </style>
+</head>
+
+<body class="bg-[#f8fafc] text-slate-900 antialiased selection:bg-slate-200">
+
+  <div class="app-shell flex flex-col w-full max-w-full overflow-hidden">
+    
+    <!-- TOP APP BAR -->
+    <header class="bg-white/95 backdrop-blur-md border-b border-slate-200 px-3 sm:px-6 py-2.5 sm:py-3.5 flex items-center justify-between flex-shrink-0 z-30 safe-top safe-left safe-right">
+      <div class="flex items-center space-x-2.5 sm:space-x-3.5 min-w-0">
+        <!-- Brand Icon -->
+        <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-slate-900 text-white flex items-center justify-center font-bold text-xs sm:text-sm tracking-wider flex-shrink-0 shadow-sm">
+          AI
+        </div>
+        <div class="min-w-0">
+          <div class="flex items-center space-x-1.5 sm:space-x-2">
+            <h1 class="text-xs sm:text-sm md:text-base font-semibold text-slate-900 leading-none truncate">
+              AI Copilot
+            </h1>
+            <span class="hidden md:inline-flex items-center text-[11px] font-mono text-slate-400">
+              / Hosur Plant 01
+            </span>
+          </div>
+          <p class="text-[10px] sm:text-[11px] text-slate-500 font-mono mt-0.5 sm:mt-1 truncate">
+            Kaveri Precision Components &bull; QMS Assistant
+          </p>
+        </div>
+      </div>
+      
+      <!-- Right Status Indicators -->
+      <div class="flex items-center space-x-1.5 sm:space-x-3 flex-shrink-0">
+        <!-- Latency / Health Pill -->
+        <div class="inline-flex items-center space-x-1.5 px-2.5 py-1 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-mono text-slate-700 bg-slate-50 border border-slate-200 shadow-2xs">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse flex-shrink-0"></span>
+          <span class="font-medium hidden xs:inline">Grounded QMS</span>
+          <span class="font-medium xs:hidden">Online</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN SCROLLABLE CHAT FEED -->
+    <main id="chat-messages" class="flex-1 overflow-y-auto px-3 sm:px-6 md:px-8 py-3 sm:py-6 w-full max-w-4xl mx-auto space-y-4 sm:space-y-6 safe-left safe-right">
+      
+      <!-- WELCOME HERO CARD -->
+      <section class="bg-white border border-slate-200/90 rounded-xl p-4 sm:p-5 shadow-xs">
+        <div class="text-[10px] sm:text-xs font-mono uppercase tracking-wider text-slate-400 font-semibold mb-1">
+          Shop Floor Technical Guidance
+        </div>
+        <h2 class="text-base sm:text-xl md:text-2xl font-bold tracking-tight text-slate-900">
+          Good morning, Supervisor.
+        </h2>
+        <p class="text-xs sm:text-sm text-slate-600 mt-1 leading-relaxed">
+          Instant verified instructions grounded strictly in controlled Hosur plant documentation: CNC preventive maintenance, lockout/tagout procedures, and incoming material quality standards.
+        </p>
+      </section>
+
+    </main>
+
+    <!-- BOTTOM INPUT DOCK (Sticky, Responsive, Notch-Safe) -->
+    <footer class="p-2.5 sm:p-4 md:p-5 w-full max-w-4xl mx-auto flex-shrink-0 safe-bottom safe-left safe-right">
+      
+      <!-- SUGGESTED INQUIRIES -->
+      <div class="mb-2 sm:mb-3">
+        <div class="text-[10px] uppercase font-bold tracking-wider text-slate-400 font-mono mb-1.5 sm:mb-2 flex items-center justify-between">
+          <span>Quick Inquiries</span>
+          <span class="text-[9px] text-slate-400 font-normal sm:hidden">Swipe &rarr;</span>
+        </div>
+        
+        <!-- Responsive Container: Swipe on mobile, Grid on tablet/desktop -->
+        <div class="flex sm:grid sm:grid-cols-3 gap-2 overflow-x-auto pb-1 sm:pb-0 text-xs no-scrollbar">
+          
+          <button type="button" 
+                  onclick="sendQuickPrompt('Workers are coming. It is morning shift. What precautions should I tell them?')" 
+                  class="bg-white hover:bg-slate-50 active:bg-slate-100 border border-slate-200 rounded-lg p-2.5 sm:p-3 text-left transition flex items-center justify-between shadow-2xs flex-shrink-0 w-[240px] sm:w-auto">
+            <div class="min-w-0 pr-2">
+              <div class="font-semibold text-slate-800 text-xs truncate">Morning Shift Briefing</div>
+              <div class="text-[10px] sm:text-[11px] text-slate-400 truncate">Daily safety & pre-start checks</div>
+            </div>
+            <span class="text-slate-400 font-mono text-xs flex-shrink-0">&rarr;</span>
+          </button>
+          
+          <button type="button" 
+                  onclick="sendQuickPrompt('The machine is showing alarm AL-104. What does it mean and what should the operator do?')" 
+                  class="bg-white hover:bg-slate-50 active:bg-slate-100 border border-slate-200 rounded-lg p-2.5 sm:p-3 text-left transition flex items-center justify-between shadow-2xs flex-shrink-0 w-[240px] sm:w-auto">
+            <div class="min-w-0 pr-2">
+              <div class="font-semibold text-slate-800 text-xs truncate">Alarm AL-104 Resolution</div>
+              <div class="text-[10px] sm:text-[11px] text-slate-400 truncate">TX-200 lube level troubleshooting</div>
+            </div>
+            <span class="text-slate-400 font-mono text-xs flex-shrink-0">&rarr;</span>
+          </button>
+          
+          <button type="button" 
+                  onclick="sendQuickPrompt('What is the recommended coolant concentration for the TX-200 CNC turning centre?')" 
+                  class="bg-white hover:bg-slate-50 active:bg-slate-100 border border-slate-200 rounded-lg p-2.5 sm:p-3 text-left transition flex items-center justify-between shadow-2xs flex-shrink-0 w-[240px] sm:w-auto">
+            <div class="min-w-0 pr-2">
+              <div class="font-semibold text-slate-800 text-xs truncate">Coolant Concentration</div>
+              <div class="text-[10px] sm:text-[11px] text-slate-400 truncate">Refractometer & top-up spec</div>
+            </div>
+            <span class="text-slate-400 font-mono text-xs flex-shrink-0">&rarr;</span>
+          </button>
+
+        </div>
+      </div>
+
+      <!-- INPUT BOX FORM -->
+      <form id="chat-form" onsubmit="handleFormSubmit(event)" class="border border-slate-300 rounded-xl bg-white shadow-xs focus-within:border-slate-600 focus-within:ring-1 focus-within:ring-slate-400 transition">
+        <textarea 
+          id="user-input"
+          rows="2"
+          placeholder="Ask a technical question about plant SOPs, equipment, or quality specs..." 
+          class="w-full px-3 py-2 sm:px-3.5 sm:py-3 text-xs sm:text-sm text-slate-900 bg-transparent resize-none focus:outline-none placeholder:text-slate-400 leading-relaxed font-sans"
+          onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); handleFormSubmit(event); }"
+        ></textarea>
+        
+        <div class="flex items-center justify-between px-2.5 py-1.5 sm:px-3.5 sm:py-2 border-t border-slate-100 bg-slate-50/60 rounded-b-xl">
+          <div class="text-[9px] sm:text-[10px] font-mono text-slate-500 flex items-center space-x-1.5 truncate max-w-[200px] sm:max-w-none">
+            <span class="text-slate-400">📄</span>
+            <span class="truncate">Grounded in Kaveri Precision SOPs</span>
+          </div>
+
+          <div class="flex items-center space-x-2 flex-shrink-0">
+            <span class="text-[10px] font-mono text-slate-400 hidden sm:inline">&crarr; to send &bull; Shift + &crarr; for new line</span>
+            <button 
+              type="submit" 
+              id="send-btn"
+              aria-label="Send query"
+              class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-slate-900 hover:bg-slate-800 active:bg-black text-white flex items-center justify-center transition shadow-xs disabled:opacity-40 disabled:cursor-not-allowed">
+              <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </form>
+
+      <div class="text-[9px] sm:text-[10px] text-center text-slate-400 font-mono mt-1 sm:mt-1.5 truncate">
+        AI Copilot &bull; Verified against active plant SOPs &bull; Zero Hardcoding &bull; BM25 Inverted Index
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- JAVASCRIPT STREAMING & INTERACTION LOGIC -->
+  <script>
+    const messagesContainer = document.getElementById("chat-messages");
+    const userInput = document.getElementById("user-input");
+    const sendBtn = document.getElementById("send-btn");
+
+    function scrollToBottom() {
+      // Smooth auto scroll to latest message
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    function appendUserMessage(text) {
+      const el = document.createElement("div");
+      el.className = "msg-fade-in flex items-start space-x-2.5 sm:space-x-3.5 max-w-full";
+      el.innerHTML = `
+        <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-200 text-slate-700 text-[11px] sm:text-xs font-semibold flex items-center justify-center flex-shrink-0 mt-0.5 shadow-2xs">
+          SP
+        </div>
+        <div class="flex-1 space-y-1 min-w-0">
+          <div class="text-[10px] sm:text-[11px] text-slate-400 font-mono">Supervisor</div>
+          <div class="bg-white border border-slate-200 rounded-lg p-2.5 sm:p-3.5 text-xs sm:text-sm text-slate-800 shadow-2xs leading-relaxed max-w-2xl break-words" style="overflow-wrap: anywhere;">
+            ${escapeHtml(text)}
+          </div>
+        </div>
+      `;
+      messagesContainer.appendChild(el);
+      scrollToBottom();
+    }
+
+    function createAIMessageContainer() {
+      const el = document.createElement("div");
+      el.className = "msg-fade-in flex items-start space-x-2.5 sm:space-x-3.5 max-w-full";
+      el.innerHTML = `
+        <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-900 text-white text-[11px] sm:text-xs font-semibold flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm">
+          AI
+        </div>
+        <div class="flex-1 space-y-2 max-w-3xl min-w-0">
+          <div class="flex items-center space-x-2 text-xs text-slate-500 font-mono">
+            <span class="font-semibold text-slate-900 font-sans text-xs sm:text-sm">AI Copilot</span>
+            <span class="text-slate-300">&bull;</span>
+            <span class="text-[9px] sm:text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-200 font-medium">SOP Grounded</span>
+          </div>
+          
+          <div class="content-body bg-white border border-slate-200 rounded-lg p-3 sm:p-4 text-xs sm:text-sm text-slate-800 shadow-2xs leading-relaxed space-y-2 break-words" style="overflow-wrap: anywhere;"></div>
+          
+          <div class="footer-meta border border-slate-200 rounded-lg p-2.5 sm:p-3 bg-slate-50/70 space-y-2 hidden">
+            <div class="flex items-center justify-between text-[11px] sm:text-xs text-slate-600 font-medium">
+              <span class="flex items-center space-x-1.5 truncate">
+                <svg class="w-3.5 h-3.5 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <span>Sources & Citations</span>
+              </span>
+              <span class="latency-badge text-[9px] sm:text-[10px] font-mono text-slate-500 flex-shrink-0 font-medium"></span>
+            </div>
+            <div class="sources-container space-y-1 font-mono text-[10px] sm:text-[11px] text-slate-700"></div>
+          </div>
+        </div>
+      `;
+      messagesContainer.appendChild(el);
+      scrollToBottom();
+      return el;
+    }
+
+    async function submitQuery(queryText) {
+      if (!queryText || !queryText.trim()) return;
+      queryText = queryText.trim();
+
+      appendUserMessage(queryText);
+      userInput.value = "";
+      userInput.disabled = true;
+      sendBtn.disabled = true;
+
+      const messageCard = createAIMessageContainer();
+      const contentBody = messageCard.querySelector(".content-body");
+      const footerMeta = messageCard.querySelector(".footer-meta");
+      const sourcesContainer = messageCard.querySelector(".sources-container");
+      const latencyBadge = messageCard.querySelector(".latency-badge");
+
+      contentBody.innerHTML = '<span class="inline-block w-2 h-2 bg-slate-600 rounded-full animate-ping mr-2"></span><span class="text-slate-500 font-mono text-xs">Retrieving controlled plant SOPs...</span>';
+
+      const startTime = performance.now();
+      let accumulatedText = "";
+
+      try {
+        const response = await fetch("/api/chat/stream", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: queryText })
+        });
+
+        if (!response.ok) {
+          contentBody.innerText = "System Alert: Server request could not be processed.";
+          return;
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n\n");
+          buffer = lines.pop();
+
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              const payload = JSON.parse(line.slice(6));
+              accumulatedText += payload.token;
+              contentBody.innerHTML = formatMarkdown(accumulatedText);
+              scrollToBottom();
+
+              if (payload.done) {
+                const elapsedMs = Math.round(performance.now() - startTime);
+                footerMeta.classList.remove("hidden");
+                
+                if (payload.source_documents && payload.source_documents.length > 0) {
+                  sourcesContainer.innerHTML = payload.source_documents.map(s => `
+                    <div class="flex items-center justify-between p-1.5 sm:p-2 bg-white rounded border border-slate-200">
+                      <span class="font-medium text-slate-800 break-all">📄 ${escapeHtml(s)}</span>
+                      <span class="text-[9px] sm:text-[10px] text-slate-400 font-sans flex-shrink-0 ml-2">Active QMS</span>
+                    </div>
+                  `).join("");
+                }
+
+                latencyBadge.innerText = (payload.cached ? "⚡ In-Memory Cache • " : "") + `${elapsedMs} ms`;
+              }
+            }
+          }
+        }
+      } catch (err) {
+        contentBody.innerText = "Network Error: Could not reach the plant copilot server.";
+      } finally {
+        userInput.disabled = false;
+        sendBtn.disabled = false;
+        userInput.focus();
+        scrollToBottom();
+      }
+    }
+
+    function handleFormSubmit(e) {
+      if (e) e.preventDefault();
+      submitQuery(userInput.value);
+    }
+
+    function sendQuickPrompt(prompt) {
+      submitQuery(prompt);
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.innerText = text;
+      return div.innerHTML;
+    }
+
+    function formatMarkdown(text) {
+      if (!text) return "";
+      let html = escapeHtml(text);
+      // Bold
+      html = html.replace(/\*\*([^*]+)\*\*/g, '<strong class="font-semibold text-slate-900">$1</strong>');
+      // Headers
+      html = html.replace(/### ([^\n]+)/g, '<div class="font-semibold text-slate-900 mt-2.5 mb-1 text-xs sm:text-sm">$1</div>');
+      html = html.replace(/## ([^\n]+)/g, '<div class="font-semibold text-slate-900 mt-2.5 mb-1 text-xs sm:text-sm">$1</div>');
+      // Dividers
+      html = html.replace(/---/g, '<hr class="border-slate-200 my-2" />');
+      // Bullet points
+      html = html.replace(/\n\* ([^\n]+)/g, '<div class="pl-3.5 relative before:content-[\'•\'] before:absolute before:left-0 before:text-slate-400 my-0.5">$1</div>');
+      // Numbered lists
+      html = html.replace(/\n([0-9]+\.) ([^\n]+)/g, '<div class="pl-4 font-medium text-slate-800 mt-1"><span class="font-mono text-slate-400">$1</span> $2</div>');
+      // Line breaks
+      html = html.replace(/\n/g, '<br/>');
+      return html;
+    }
+  </script>
+
+</body>
+</html>
